@@ -1,4 +1,4 @@
-.PHONY: install env-init check-tools compose-infra provision kind-create kind-delete kind-status s3-bucket pulumi-dev-stack infra-deps pulumi-preview pulumi-up app-image-build app-image-load app-image-push app-deploy check-env test ruff ty lint uv-add-dev
+.PHONY: install env-init check-tools compose-infra provision kind-create kind-delete kind-status s3-bucket pulumi-dev-stack infra-deps pulumi-preview pulumi-up app-image-build app-image-load app-image-push app-deploy check-env dev test ruff ty lint uv-add-dev
 
 ENV_FILE ?= .env
 
@@ -68,6 +68,13 @@ pulumi-up: infra-deps
 	cd infra && pulumi up --yes --stack $(PULUMI_STACK_NAME)
 
 app-deploy: kind-create app-image-push pulumi-up
+
+dev: check-env
+	docker compose up -d app
+	docker compose run --rm dbmate
+	docker compose up -d frontend
+	@echo "Backend:  http://localhost:8000"
+	@echo "Frontend: http://localhost:3000"
 
 dbmate:
 	docker compose run --rm dbmate

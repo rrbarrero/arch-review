@@ -70,6 +70,21 @@ services:
       pgvector:
         condition: service_healthy
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: arch-review-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - app
+
   rustfs:
     image: rustfs/rustfs:latest
     container_name: rustfs-server
