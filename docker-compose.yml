@@ -58,6 +58,18 @@ services:
       retries: 10
     restart: unless-stopped
 
+  dbmate:
+    image: amacneil/dbmate
+    user: "1000:1000"
+    command: ["up"]
+    volumes:
+      - ./db:/db
+    environment:
+      DATABASE_URL: postgres://${PGVECTOR_USER}:${PGVECTOR_PASSWORD}@${PGVECTOR_HOST}:${PGVECTOR_PORT}/${PGVECTOR_DATABASE}?sslmode=disable
+    depends_on:
+      pgvector:
+        condition: service_healthy
+
   rustfs:
     image: rustfs/rustfs:latest
     container_name: rustfs-server

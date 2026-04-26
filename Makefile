@@ -1,4 +1,4 @@
-.PHONY: install env-init check-tools compose-infra provision kind-create kind-delete kind-status s3-bucket pulumi-dev-stack infra-deps pulumi-preview pulumi-up app-image-build app-image-load app-image-push app-deploy check-env
+.PHONY: install env-init check-tools compose-infra provision kind-create kind-delete kind-status s3-bucket pulumi-dev-stack infra-deps pulumi-preview pulumi-up app-image-build app-image-load app-image-push app-deploy check-env test ruff ty lint uv-add-dev
 
 ENV_FILE ?= .env
 
@@ -68,3 +68,23 @@ pulumi-up: infra-deps
 	cd infra && pulumi up --yes --stack $(PULUMI_STACK_NAME)
 
 app-deploy: kind-create app-image-push pulumi-up
+
+dbmate:
+	docker compose run --rm dbmate
+
+test:
+	docker compose run --rm app uv run pytest tests/ -v
+
+ruff:
+	docker compose run --rm app uv run ruff check .
+
+ty:
+	docker compose run --rm app uv run ty check --exclude infra
+
+lint: ruff ty
+
+uv-add:
+	docker compose run --rm app uv add $(pkg)
+
+uv-add-dev:
+	docker compose run --rm app uv add --dev $(pkg)

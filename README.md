@@ -35,3 +35,12 @@ This section tracks the main implementation milestones and architectural decisio
 - Added pgvector and Neo4j as RAG data services, available both in Docker Compose for development and in Kubernetes through Pulumi-managed resources.
 - Refactored infrastructure configuration so stack-specific values such as service names, ports, storage sizes, images, and Traefik settings are defined in `Pulumi.<stack>.yaml`.
 - Added a non-interactive `make install` bootstrap path for quickly reproducing the full environment from a fresh checkout.
+- Designed domain models for the intake bounded context following DDD, using Python dataclasses. Value objects: `Source`, `ProcessingStatus`, `ChunkStatus`, `Metadata`. Entities: `Document`, `DocumentChunk`. Repository protocols: `DocumentRepository`, `ChunkRepository`.
+- Added `pydantic-settings` for database configuration (`app/settings.py`), loading `PGVECTOR` and `NEO4J` connection parameters from `.env`.
+- Installed `psycopg[binary,pool]` for async PostgreSQL access.
+- Implemented in-memory (`InMemoryDocumentRepository`, `InMemoryChunkRepository`) and PostgreSQL (`PostgresDocumentRepository`, `PostgresChunkRepository`) repository variants under `app/intake/infrastructure/persistence/`.
+- Added 12 integration tests in `tests/integration/test_repositories.py` that run the same scenarios against both implementations, verifying save, find, upsert, delete, batch save, status filtering, and cascade delete. Postgres tables are cleaned up after the test session.
+- Added `make test` to run tests inside Docker.
+- Added `ruff` and `ty` (Astral's Rust-based Python type checker) as dev dependencies, with `make ruff`, `make ty`, and `make lint` targets. The `ty` target runs in strict mode and excludes `infra/`.
+- Added `dbmate` service in Docker Compose for database migration management. Initial migration creates `documents` and `chunks` tables with vector extension, foreign keys, and indexes. Use `make dbmate` to apply pending migrations.
+- Added `.github/workflows/ci.yml` with lint (`make ruff`), type checking (`make ty`), and test (`make test`) steps running on push/PR to `main`.

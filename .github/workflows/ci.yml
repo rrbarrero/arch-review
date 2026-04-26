@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run linter
+        run: make ruff
+
+      - name: Run type checker
+        run: make ty
+
+      - name: Run tests
+        run: make test
