@@ -1,0 +1,11 @@
+name: arch-review
+description: Infrastructure for arch-review
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python

@@ -16,11 +16,19 @@ source "${ENV_FILE}"
 set +a
 
 : "${PULUMI_BUCKET_NAME:?PULUMI_BUCKET_NAME must be set in .env}"
+: "${PULUMI_BACKEND_ENDPOINT:?PULUMI_BACKEND_ENDPOINT must be set in .env}"
+: "${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID must be set in .env}"
+: "${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY must be set in .env}"
+: "${AWS_REGION:?AWS_REGION must be set in .env}"
 
-aws --profile rustfs \
-  --endpoint-url http://localhost:9000 \
-  s3 mb s3://${PULUMI_BUCKET_NAME}
+S3_ENDPOINT_URL="http://${PULUMI_BACKEND_ENDPOINT}"
 
-aws --profile rustfs \
-  --endpoint-url http://localhost:9000 \
+if aws --endpoint-url "${S3_ENDPOINT_URL}" s3 ls "s3://${PULUMI_BUCKET_NAME}" >/dev/null 2>&1; then
+  echo "S3 bucket '${PULUMI_BUCKET_NAME}' already exists. Skipping creation."
+else
+  aws --endpoint-url "${S3_ENDPOINT_URL}" \
+    s3 mb "s3://${PULUMI_BUCKET_NAME}"
+fi
+
+aws --endpoint-url "${S3_ENDPOINT_URL}" \
   s3 ls s3://
