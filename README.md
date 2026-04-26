@@ -25,12 +25,13 @@ This section tracks the main implementation milestones and architectural decisio
 ### 2026-04-26
 
 - Built the first runnable version of the platform, including a FastAPI backend, a Next.js frontend, persistent data services, and automation to recreate the full local environment from a fresh checkout.
-- Set up a reproducible cloud-native delivery workflow: container build, local Kubernetes deployment, infrastructure as code, environment-specific configuration, and database migrations.
+- Set up a reproducible cloud-native delivery workflow: container builds, local Kubernetes deployment, infrastructure as code, environment-specific configuration, and database migrations.
 - Established a clean backend architecture around domain-driven design principles, separating domain models, application use cases, persistence, external services, and HTTP routing.
 - Added the core data layer for a RAG system, combining relational document storage, vector-ready chunks, and a graph representation of documents and relationships.
 - Implemented the first end-to-end ingestion flow: uploading Markdown and Python files, validating size and type constraints, splitting content into retrieval-friendly chunks, persisting the results, and returning structured feedback.
 - Improved the chunking pipeline with language-aware splitting strategies and hierarchical document processing, preparing the system to support summaries, parent-child context, and more traceable retrieval.
 - Integrated local LLM and embedding capabilities so ingested content can be enriched during processing and prepared for semantic search.
 - Created an initial browser-based upload experience with client-side validation and real API integration, giving the project a usable product surface rather than only backend endpoints.
+- Integrated the Next.js frontend into the infrastructure-as-code deployment, so both frontend and backend are managed as part of the same Kubernetes application.
 - Added integration tests across persistence and ingestion behavior, plus automated linting, type checking, database migration management, and CI validation for pull requests.
-- Verified the full loop from local bootstrap to deployed application response, leaving a stable foundation for the next milestones: retrieval, cited answers, graph-assisted context, and observability.
+- Verified the full application running correctly on Kubernetes with the first use case in place: the initial ingestion iteration, embedding generation, and graph enrichment.
