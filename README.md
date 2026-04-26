@@ -44,3 +44,6 @@ This section tracks the main implementation milestones and architectural decisio
 - Added `ruff` and `ty` (Astral's Rust-based Python type checker) as dev dependencies, with `make ruff`, `make ty`, and `make lint` targets. The `ty` target runs in strict mode and excludes `infra/`.
 - Added `dbmate` service in Docker Compose for database migration management. Initial migration creates `documents` and `chunks` tables with vector extension, foreign keys, and indexes. Use `make dbmate` to apply pending migrations.
 - Added `.github/workflows/ci.yml` with lint (`make ruff`), type checking (`make ty`), and test (`make test`) steps running on push/PR to `main`.
+- Implemented use case #1: file ingestion (`IngestDocumentsUseCase`). `POST /intake/ingest` accepts `.md` and `.py` files (max 500 KB each, batch upload), chunks them by paragraphs, and persists documents + chunks via the repository layer.
+- Added `ChunkingService` (domain service) for text splitting, and `FileInput`/`IngestDocumentsOutput` DTOs.
+- Added 8 integration tests for the ingestion use case using in-memory repositories, covering single/multiple files, extension validation, size limits, partial failures, and empty inputs.
