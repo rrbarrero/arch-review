@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepare environment
+        run: make env-init
+
       - name: Run linter
         run: make ruff
 
