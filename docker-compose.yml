@@ -12,6 +12,7 @@ services:
       - "8000:8000"
     volumes:
       - .:/workspace
+      - /workspace/.venv
     depends_on:
       pgvector:
         condition: service_healthy

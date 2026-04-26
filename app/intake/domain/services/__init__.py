@@ -1,4 +1,5 @@
 from app.intake.domain.services.chunking_service import ChunkingService
+from app.intake.domain.services.embedding_service import EmbeddingService
 from app.intake.domain.services.raptor_service import RaptorService
 from app.intake.domain.services.strategies import (
     ChunkingStrategy,
@@ -9,6 +10,7 @@ from app.intake.domain.services.strategies import (
 __all__ = [
     "ChunkingService",
     "ChunkingStrategy",
+    "EmbeddingService",
     "MarkdownChunkingStrategy",
     "PythonChunkingStrategy",
     "RaptorService",

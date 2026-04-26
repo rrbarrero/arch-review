@@ -6,8 +6,10 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]>=0.136.1",
+    "langchain-ollama>=1.1.0",
     "langchain-text-splitters>=1.1.2",
     "langgraph>=1.1.9",
+    "neo4j>=6.1.0",
     "psycopg[binary,pool]>=3.3.3",
     "pydantic-settings>=2.14.0",
     "pytest>=9.0.3",
