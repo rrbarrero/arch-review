@@ -12,8 +12,11 @@ This section tracks the main implementation milestones and architectural decisio
 
 ### 2026-04-26
 
-- Defined the project direction as a Kubernetes-based RAG platform for technical documentation, focused on reproducible infrastructure, observability, and clear architectural trade-offs.
 - Added a FastAPI backend skeleton under `app/` and configured Docker Compose to build and run the backend image with `uv`.
 - Centralized environment configuration in `.env`, with `env.example` documenting the expected variables for Kubernetes, the backend image, Pulumi, state management, and cloud-compatible credentials.
 - Added idempotent provisioning scripts for Kubernetes infrastructure, Pulumi state management, and the Pulumi `dev` stack under `infra/`.
 - Updated the Makefile to orchestrate provisioning steps through scripts instead of embedding operational logic directly in make targets.
+- Added Pulumi resources to deploy the FastAPI backend on Kubernetes, including namespace, deployment, service, ingress, and Traefik-based routing.
+- Added Makefile targets to build the backend image, load it into the Kubernetes cluster, and deploy the application through Pulumi.
+- Verified that the backend is reachable at `http://arch-review.local:8000`.
+- Established a stable delivery loop that supports small, incremental changes with fast feedback through image build, cluster load, and Pulumi deployment.

@@ -1,4 +1,4 @@
-.PHONY: provision kind-create kind-delete kind-status s3-bucket pulumi-dev-stack check-env
+.PHONY: provision kind-create kind-delete kind-status s3-bucket pulumi-dev-stack infra-deps pulumi-preview pulumi-up app-image-build app-image-load app-image-push app-deploy check-env
 
 ENV_FILE ?= .env
 
@@ -30,4 +30,25 @@ s3-bucket: check-env
 pulumi-dev-stack: check-env
 	./ops/pulumi_dev_stack_provision.sh
 
+infra-deps: pulumi-dev-stack
+	test -d infra/venv || python -m venv infra/venv
+	infra/venv/bin/python -m pip install -r infra/requirements.txt
+
 provision: kind-create s3-bucket pulumi-dev-stack
+
+app-image-build: check-env
+	docker build -f app/Dockerfile -t $(APP_IMAGE) .
+
+app-image-load: app-image-build
+	kind load docker-image $(APP_IMAGE) --name $(KIND_CLUSTER_NAME)
+
+app-image-push: app-image-load
+
+pulumi-preview: infra-deps
+	cd infra && pulumi preview --stack $(PULUMI_STACK_NAME)
+
+pulumi-up: infra-deps
+	cd infra && pulumi config set image $(APP_IMAGE) --stack $(PULUMI_STACK_NAME)
+	cd infra && pulumi up --yes --stack $(PULUMI_STACK_NAME)
+
+app-deploy: kind-create app-image-push pulumi-up

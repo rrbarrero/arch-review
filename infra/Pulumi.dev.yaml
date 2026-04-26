@@ -1,1 +1,7 @@
 encryptionsalt: v1:JDVXG0inRtQ=:v1:gcRj2GkSXOtq4n6w:VCq7Emqf00ybfpTlhkDoBVUzzaSuUA==
+config:
+  arch-review:namespace: arch-review-dev
+  arch-review:image: arch-review-image:dev
+  arch-review:replicas: "1"
+  arch-review:ingress_host: arch-review.local
+  arch-review:install_traefik: "true"

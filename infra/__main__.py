@@ -1,3 +1,3 @@
-"""A Python Pulumi program"""
+from stack import main
 
-import pulumi
+main()
