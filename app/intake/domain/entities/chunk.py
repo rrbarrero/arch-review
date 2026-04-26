@@ -14,6 +14,8 @@ class DocumentChunk:
     status: ChunkStatus
     metadata: Metadata
     created_at: datetime
+    level: int = 0
+    parent_ids: tuple[str, ...] = ()
     embedding: list[float] | None = None
     graph_node_id: str | None = None
     error: str | None = None

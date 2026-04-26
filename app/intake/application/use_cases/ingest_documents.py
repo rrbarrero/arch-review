@@ -13,6 +13,7 @@ from app.intake.domain.entities.document import Document
 from app.intake.domain.repositories.chunk_repository import ChunkRepository
 from app.intake.domain.repositories.document_repository import DocumentRepository
 from app.intake.domain.services.chunking_service import ChunkingService
+from app.intake.domain.services.raptor_service import RaptorService
 from app.intake.domain.value_objects import Metadata, ProcessingStatus, Source
 
 MAX_FILE_SIZE = 500 * 1024
@@ -40,10 +41,12 @@ class IngestDocumentsUseCase:
         document_repository: DocumentRepository,
         chunk_repository: ChunkRepository,
         chunking_service: ChunkingService | None = None,
+        raptor_service: RaptorService | None = None,
     ) -> None:
         self._document_repository = document_repository
         self._chunk_repository = chunk_repository
         self._chunking_service = chunking_service or ChunkingService()
+        self._raptor_service = raptor_service
 
     async def execute(self, files: Sequence[FileInput]) -> IngestDocumentsOutput:
         output = IngestDocumentsOutput()
@@ -91,6 +94,10 @@ class IngestDocumentsUseCase:
         )
 
         chunks = self._chunking_service.chunk(document.id, text, document.source.content_type)
+
+        if self._raptor_service and chunks:
+            chunks = self._raptor_service.build_tree(chunks, document.id)
+
         return _ProcessResult(document=document, chunks=chunks)
 
     async def _persist(self, result: _ProcessResult) -> None:
