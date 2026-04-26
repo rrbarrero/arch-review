@@ -90,7 +90,7 @@ class IngestDocumentsUseCase:
             updated_at=now,
         )
 
-        chunks = self._chunking_service.chunk(document.id, text)
+        chunks = self._chunking_service.chunk(document.id, text, document.source.content_type)
         return _ProcessResult(document=document, chunks=chunks)
 
     async def _persist(self, result: _ProcessResult) -> None:
