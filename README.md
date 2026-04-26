@@ -16,6 +16,8 @@ make install
 
 This command prepares the environment file, starts the supporting services, provisions the Kubernetes and Pulumi resources, builds the backend image, loads it into the cluster, and deploys the application. It is idempotent, so running it multiple times should converge the environment without breaking an existing setup.
 
+![alt text](image-1.png)
+
 ## Progress Log
 
 This section tracks the main implementation milestones and architectural decisions as the project evolves.
