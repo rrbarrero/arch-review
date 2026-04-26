@@ -3,7 +3,7 @@ from typing import Sequence
 import pulumi
 import pulumi_kubernetes as k8s
 
-from common import APP_NAME, APP_PORT, TRAEFIK_INGRESS_CLASS, labels, namespaced_metadata
+from common import labels, namespaced_metadata, related_name, secret_key_ref
 from settings import Settings
 
 
@@ -20,12 +20,15 @@ def create_namespace(settings: Settings) -> pulumi.Output[str]:
 def create_app(
     settings: Settings,
     namespace_name: pulumi.Input[str],
+    dependencies: Sequence[pulumi.Resource] | None = None,
 ) -> k8s.core.v1.Service:
-    app_labels = labels(APP_NAME)
+    app_labels = labels(settings.app_name)
+    pgvector_secret_name = related_name(settings.pgvector_name, "secret")
+    neo4j_secret_name = related_name(settings.neo4j_name, "secret")
 
     k8s.apps.v1.Deployment(
-        APP_NAME,
-        metadata=namespaced_metadata(namespace_name, APP_NAME),
+        settings.app_name,
+        metadata=namespaced_metadata(namespace_name, settings.app_name),
         spec={
             "selector": {
                 "matchLabels": app_labels,
@@ -38,18 +41,61 @@ def create_app(
                 "spec": {
                     "containers": [
                         {
-                            "name": APP_NAME,
+                            "name": settings.app_name,
                             "image": settings.image,
                             "imagePullPolicy": "IfNotPresent",
                             "ports": [
                                 {
-                                    "containerPort": APP_PORT,
+                                    "containerPort": settings.app_port,
                                 }
+                            ],
+                            "env": [
+                                {
+                                    "name": "PGVECTOR_HOST",
+                                    "value": settings.pgvector_name,
+                                },
+                                {
+                                    "name": "PGVECTOR_PORT",
+                                    "value": str(settings.pgvector_port),
+                                },
+                                {
+                                    "name": "PGVECTOR_DATABASE",
+                                    "value": settings.pgvector_db,
+                                },
+                                {
+                                    "name": "PGVECTOR_USER",
+                                    "value": settings.pgvector_user,
+                                },
+                                {
+                                    "name": "PGVECTOR_PASSWORD",
+                                    "valueFrom": secret_key_ref(
+                                        pgvector_secret_name,
+                                        "POSTGRES_PASSWORD",
+                                    ),
+                                },
+                                {
+                                    "name": "NEO4J_URI",
+                                    "value": (
+                                        f"bolt://{settings.neo4j_name}:"
+                                        f"{settings.neo4j_bolt_port}"
+                                    ),
+                                },
+                                {
+                                    "name": "NEO4J_USER",
+                                    "value": settings.neo4j_user,
+                                },
+                                {
+                                    "name": "NEO4J_PASSWORD",
+                                    "valueFrom": secret_key_ref(
+                                        neo4j_secret_name,
+                                        "NEO4J_PASSWORD",
+                                    ),
+                                },
                             ],
                             "readinessProbe": {
                                 "httpGet": {
                                     "path": "/",
-                                    "port": APP_PORT,
+                                    "port": settings.app_port,
                                 },
                                 "initialDelaySeconds": 5,
                                 "periodSeconds": 10,
@@ -57,7 +103,7 @@ def create_app(
                             "livenessProbe": {
                                 "httpGet": {
                                     "path": "/",
-                                    "port": APP_PORT,
+                                    "port": settings.app_port,
                                 },
                                 "initialDelaySeconds": 15,
                                 "periodSeconds": 20,
@@ -67,17 +113,18 @@ def create_app(
                 },
             },
         },
+        opts=pulumi.ResourceOptions(depends_on=dependencies or []),
     )
 
     return k8s.core.v1.Service(
-        APP_NAME,
-        metadata=namespaced_metadata(namespace_name, APP_NAME),
+        settings.app_name,
+        metadata=namespaced_metadata(namespace_name, settings.app_name),
         spec={
             "selector": app_labels,
             "ports": [
                 {
-                    "port": APP_PORT,
-                    "targetPort": APP_PORT,
+                    "port": settings.app_port,
+                    "targetPort": settings.app_port,
                 }
             ],
         },
@@ -85,23 +132,23 @@ def create_app(
 
 
 def create_ingress(
+    settings: Settings,
     namespace_name: pulumi.Input[str],
-    ingress_host: str,
     dependencies: Sequence[pulumi.Resource],
 ) -> None:
     k8s.networking.v1.Ingress(
-        APP_NAME,
+        settings.app_name,
         metadata={
-            **namespaced_metadata(namespace_name, APP_NAME),
+            **namespaced_metadata(namespace_name, settings.app_name),
             "annotations": {
                 "pulumi.com/skipAwait": "true",
             },
         },
         spec={
-            "ingressClassName": TRAEFIK_INGRESS_CLASS,
+            "ingressClassName": settings.traefik_ingress_class,
             "rules": [
                 {
-                    "host": ingress_host,
+                    "host": settings.ingress_host,
                     "http": {
                         "paths": [
                             {
@@ -109,9 +156,9 @@ def create_ingress(
                                 "pathType": "Prefix",
                                 "backend": {
                                     "service": {
-                                        "name": APP_NAME,
+                                        "name": settings.app_name,
                                         "port": {
-                                            "number": APP_PORT,
+                                            "number": settings.app_port,
                                         },
                                     }
                                 },

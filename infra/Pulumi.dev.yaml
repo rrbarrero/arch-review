@@ -1,7 +1,26 @@
 encryptionsalt: v1:JDVXG0inRtQ=:v1:gcRj2GkSXOtq4n6w:VCq7Emqf00ybfpTlhkDoBVUzzaSuUA==
 config:
   arch-review:namespace: arch-review-dev
+  arch-review:app_name: arch-review-api
+  arch-review:app_port: "8000"
   arch-review:image: arch-review-image:dev
   arch-review:replicas: "1"
   arch-review:ingress_host: arch-review.local
   arch-review:install_traefik: "true"
+  arch-review:traefik_name: traefik
+  arch-review:traefik_namespace: traefik
+  arch-review:traefik_http_node_port: "30080"
+  arch-review:traefik_https_node_port: "30443"
+  arch-review:traefik_ingress_class: traefik
+  arch-review:pgvector_name: pgvector
+  arch-review:pgvector_port: "5432"
+  arch-review:pgvector_image: pgvector/pgvector:pg16
+  arch-review:pgvector_db: arch_review
+  arch-review:pgvector_user: arch_review
+  arch-review:pgvector_storage_size: 256Mi
+  arch-review:neo4j_name: neo4j
+  arch-review:neo4j_http_port: "7474"
+  arch-review:neo4j_bolt_port: "7687"
+  arch-review:neo4j_image: neo4j:5-community
+  arch-review:neo4j_user: neo4j
+  arch-review:neo4j_storage_size: 256Mi

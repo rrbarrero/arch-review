@@ -1,23 +1,17 @@
 import pulumi_kubernetes as k8s
 
-from common import (
-    TRAEFIK_HTTP_NODE_PORT,
-    TRAEFIK_HTTPS_NODE_PORT,
-    TRAEFIK_INGRESS_CLASS,
-    TRAEFIK_NAME,
-    TRAEFIK_NAMESPACE,
-)
+from settings import Settings
 
 
-def create_traefik() -> k8s.helm.v3.Release:
+def create_traefik(settings: Settings) -> k8s.helm.v3.Release:
     return k8s.helm.v3.Release(
-        TRAEFIK_NAME,
-        name=TRAEFIK_NAME,
-        chart=TRAEFIK_NAME,
+        settings.traefik_name,
+        name=settings.traefik_name,
+        chart=settings.traefik_name,
         repository_opts={
             "repo": "https://traefik.github.io/charts",
         },
-        namespace=TRAEFIK_NAMESPACE,
+        namespace=settings.traefik_namespace,
         create_namespace=True,
         values={
             "service": {
@@ -26,22 +20,22 @@ def create_traefik() -> k8s.helm.v3.Release:
             "ingressClass": {
                 "enabled": True,
                 "isDefaultClass": False,
-                "name": TRAEFIK_INGRESS_CLASS,
+                "name": settings.traefik_ingress_class,
             },
             "ports": {
                 "web": {
-                    "nodePort": TRAEFIK_HTTP_NODE_PORT,
+                    "nodePort": settings.traefik_http_node_port,
                 },
                 "websecure": {
-                    "nodePort": TRAEFIK_HTTPS_NODE_PORT,
+                    "nodePort": settings.traefik_https_node_port,
                 },
             },
             "providers": {
                 "kubernetesIngress": {
-                    "ingressClass": TRAEFIK_INGRESS_CLASS,
+                    "ingressClass": settings.traefik_ingress_class,
                 },
                 "kubernetesCRD": {
-                    "ingressClass": TRAEFIK_INGRESS_CLASS,
+                    "ingressClass": settings.traefik_ingress_class,
                 },
             },
         },
