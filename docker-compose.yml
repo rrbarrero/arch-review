@@ -1,0 +1,12 @@
+services:
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: rustfs-server
+    ports:
+      - "9000:9000" # S3 API port
+      - "9001:9001" # Console port
+    volumes:
+      - ./storage/data:/data
+      - ./storage/logs:/logs
+    restart: unless-stopped
