@@ -1,4 +1,4 @@
-.PHONY: provision kind-create kind-delete kind-status s3-bucket pulumi-dev-stack infra-deps pulumi-preview pulumi-up app-image-build app-image-load app-image-push app-deploy check-env
+.PHONY: install env-init check-tools compose-infra provision kind-create kind-delete kind-status s3-bucket pulumi-dev-stack infra-deps pulumi-preview pulumi-up app-image-build app-image-load app-image-push app-deploy check-env
 
 ENV_FILE ?= .env
 
@@ -12,8 +12,24 @@ export KIND_CLUSTER_NAME KIND_CONFIG APP_IMAGE_NAME APP_IMAGE_TAG APP_IMAGE
 export PULUMI_BUCKET_NAME PULUMI_BACKEND_ENDPOINT PULUMI_PROJECT_NAME PULUMI_STACK_NAME PULUMI_CONFIG_PASSPHRASE
 export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION
 
+install: env-init check-tools
+	$(MAKE) compose-infra provision app-deploy
+
+env-init:
+	@test -f $(ENV_FILE) || cp env.example $(ENV_FILE)
+
+check-tools:
+	@command -v docker >/dev/null || (echo "Missing required command: docker" >&2; exit 1)
+	@command -v kind >/dev/null || (echo "Missing required command: kind" >&2; exit 1)
+	@command -v pulumi >/dev/null || (echo "Missing required command: pulumi" >&2; exit 1)
+	@command -v aws >/dev/null || (echo "Missing required command: aws" >&2; exit 1)
+	@command -v python >/dev/null || (echo "Missing required command: python" >&2; exit 1)
+
 check-env:
 	@test -f $(ENV_FILE) || (echo "Missing $(ENV_FILE). Copy env.example to $(ENV_FILE)." >&2; exit 1)
+
+compose-infra: check-env
+	docker compose up -d rustfs pgvector neo4j
 
 kind-create: check-env
 	./ops/kind_cluster_provision.sh

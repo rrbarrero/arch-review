@@ -8,6 +8,14 @@ The goal is to implement a FastAPI backend orchestrated with LangGraph that can 
 
 The project is designed to run on Kubernetes, with infrastructure managed through Pulumi and observability through tools such as LangSmith, Prometheus, and Grafana. The emphasis is architectural clarity: a small, explainable RAG platform that demonstrates deployment, infrastructure as code, tracing, metrics, and documented trade-offs.
 
+## Quick Start
+
+```bash
+make install
+```
+
+This command prepares the environment file, starts the supporting services, provisions the Kubernetes and Pulumi resources, builds the backend image, loads it into the cluster, and deploys the application. It is idempotent, so running it multiple times should converge the environment without breaking an existing setup.
+
 ## Progress Log
 
 This section tracks the main implementation milestones and architectural decisions as the project evolves.
@@ -24,3 +32,4 @@ This section tracks the main implementation milestones and architectural decisio
 - Established a stable delivery loop that supports small, incremental changes with fast feedback through image build, cluster load, and Pulumi deployment.
 - Added pgvector and Neo4j as RAG data services, available both in Docker Compose for development and in Kubernetes through Pulumi-managed resources.
 - Refactored infrastructure configuration so stack-specific values such as service names, ports, storage sizes, images, and Traefik settings are defined in `Pulumi.<stack>.yaml`.
+- Added a non-interactive `make install` bootstrap path for quickly reproducing the full environment from a fresh checkout.
