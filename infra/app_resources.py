@@ -91,6 +91,31 @@ def create_app(
                                         "NEO4J_PASSWORD",
                                     ),
                                 },
+                                {
+                                    "name": "CORS_ORIGINS_RAW",
+                                    "value": pulumi.Output.concat(
+                                        "http://",
+                                        settings.ingress_host,
+                                        ":",
+                                        str(settings.traefik_http_node_port),
+                                    ),
+                                },
+                                {
+                                    "name": "OLLAMA_BASE_URL",
+                                    "value": settings.ollama_base_url,
+                                },
+                                {
+                                    "name": "LLM_MODEL",
+                                    "value": settings.llm_model,
+                                },
+                                {
+                                    "name": "LLM_TEMPERATURE",
+                                    "value": str(settings.llm_temperature),
+                                },
+                                {
+                                    "name": "EMBEDDING_MODEL",
+                                    "value": settings.embedding_model,
+                                },
                             ],
                             "readinessProbe": {
                                 "httpGet": {

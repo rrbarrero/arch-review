@@ -2,6 +2,7 @@ import pulumi
 
 from app_resources import create_app, create_ingress, create_namespace
 from data_resources import create_neo4j, create_pgvector
+from frontend_resources import create_frontend
 from settings import Settings, load_settings
 from shared_resources import create_traefik
 
@@ -17,6 +18,12 @@ def main(settings: Settings | None = None) -> None:
         namespace_name,
         dependencies=[pgvector_service, neo4j_service],
     )
+    frontend_service = create_frontend(
+        resolved_settings,
+        namespace_name,
+        app_service.metadata["name"],
+        dependencies=[app_service],
+    )
 
     ingress_dependencies = [app_service]
     if resolved_settings.install_traefik:
@@ -30,8 +37,10 @@ def main(settings: Settings | None = None) -> None:
 
     pulumi.export("namespace", namespace_name)
     pulumi.export("image", resolved_settings.image)
+    pulumi.export("frontend_image", resolved_settings.frontend_image)
     pulumi.export("pgvector_service", pgvector_service.metadata["name"])
     pulumi.export("neo4j_service", neo4j_service.metadata["name"])
+    pulumi.export("frontend_service", frontend_service.metadata["name"])
     pulumi.export("ingress_host", resolved_settings.ingress_host)
     pulumi.export(
         "ingress_url",

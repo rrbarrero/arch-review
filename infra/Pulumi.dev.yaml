@@ -12,6 +12,10 @@ config:
   arch-review:traefik_http_node_port: "30080"
   arch-review:traefik_https_node_port: "30443"
   arch-review:traefik_ingress_class: traefik
+  arch-review:frontend_name: arch-review-frontend
+  arch-review:frontend_port: "3000"
+  arch-review:frontend_image: arch-review-frontend-image:dev
+  arch-review:frontend_replicas: "1"
   arch-review:pgvector_name: pgvector
   arch-review:pgvector_port: "5432"
   arch-review:pgvector_image: pgvector/pgvector:pg16

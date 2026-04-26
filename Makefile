@@ -1,4 +1,4 @@
-.PHONY: install env-init check-tools compose-infra provision kind-create kind-delete kind-status s3-bucket pulumi-dev-stack infra-deps pulumi-preview pulumi-up app-image-build app-image-load app-image-push app-deploy check-env dev test ruff ty lint uv-add-dev
+.PHONY: install env-init check-tools compose-infra provision kind-create kind-delete kind-status s3-bucket pulumi-dev-stack infra-deps pulumi-preview pulumi-up app-image-build app-image-load app-image-push app-deploy frontend-image-build frontend-image-load frontend-image-push frontend-deploy check-env dev test ruff ty lint uv-add-dev
 
 ENV_FILE ?= .env
 
@@ -7,13 +7,15 @@ include $(ENV_FILE)
 endif
 
 APP_IMAGE ?= $(APP_IMAGE_NAME):$(APP_IMAGE_TAG)
+FRONTEND_IMAGE ?= $(FRONTEND_IMAGE_NAME):$(FRONTEND_IMAGE_TAG)
 
 export KIND_CLUSTER_NAME KIND_CONFIG APP_IMAGE_NAME APP_IMAGE_TAG APP_IMAGE
+export FRONTEND_IMAGE_NAME FRONTEND_IMAGE_TAG FRONTEND_IMAGE
 export PULUMI_BUCKET_NAME PULUMI_BACKEND_ENDPOINT PULUMI_PROJECT_NAME PULUMI_STACK_NAME PULUMI_CONFIG_PASSPHRASE
 export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION
 
 install: env-init check-tools
-	$(MAKE) compose-infra provision app-deploy
+	$(MAKE) compose-infra provision deploy
 
 env-init:
 	@test -f $(ENV_FILE) || cp env.example $(ENV_FILE)
@@ -60,14 +62,23 @@ app-image-load: app-image-build
 
 app-image-push: app-image-load
 
+frontend-image-build: check-env
+	docker build -f frontend/Dockerfile -t $(FRONTEND_IMAGE) frontend
+
+frontend-image-load: frontend-image-build
+	kind load docker-image $(FRONTEND_IMAGE) --name $(KIND_CLUSTER_NAME)
+
+frontend-image-push: frontend-image-load
+
 pulumi-preview: infra-deps
 	cd infra && pulumi preview --stack $(PULUMI_STACK_NAME)
 
 pulumi-up: infra-deps
 	cd infra && pulumi config set image $(APP_IMAGE) --stack $(PULUMI_STACK_NAME)
+	cd infra && pulumi config set frontend_image $(FRONTEND_IMAGE) --stack $(PULUMI_STACK_NAME)
 	cd infra && pulumi up --yes --stack $(PULUMI_STACK_NAME)
 
-app-deploy: kind-create app-image-push pulumi-up
+deploy: kind-create app-image-push frontend-image-push pulumi-up
 
 dev: check-env
 	docker compose up -d app

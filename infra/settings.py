@@ -5,6 +5,8 @@ import pulumi
 from common import (
     DEFAULT_APP_NAME,
     DEFAULT_APP_PORT,
+    DEFAULT_FRONTEND_NAME,
+    DEFAULT_FRONTEND_PORT,
     DEFAULT_NEO4J_BOLT_PORT,
     DEFAULT_NEO4J_HTTP_PORT,
     DEFAULT_NEO4J_NAME,
@@ -32,6 +34,10 @@ class Settings:
     traefik_http_node_port: int
     traefik_https_node_port: int
     traefik_ingress_class: str
+    frontend_name: str
+    frontend_port: int
+    frontend_image: str
+    frontend_replicas: int
     pgvector_name: str
     pgvector_port: int
     pgvector_image: str
@@ -46,6 +52,11 @@ class Settings:
     neo4j_user: str
     neo4j_password: pulumi.Output[str]
     neo4j_storage_size: str
+    ollama_base_url: str
+    llm_model: str
+    llm_temperature: float
+    embedding_model: str
+    cors_origins_raw: str
 
 
 def load_settings() -> Settings:
@@ -68,6 +79,10 @@ def load_settings() -> Settings:
     traefik_ingress_class = (
         config.get("traefik_ingress_class") or DEFAULT_TRAEFIK_INGRESS_CLASS
     )
+    frontend_name = config.get("frontend_name") or DEFAULT_FRONTEND_NAME
+    frontend_port = config.get_int("frontend_port") or DEFAULT_FRONTEND_PORT
+    frontend_image = config.require("frontend_image")
+    frontend_replicas = config.get_int("frontend_replicas") or 1
     pgvector_name = config.get("pgvector_name") or DEFAULT_PGVECTOR_NAME
     pgvector_port = config.get_int("pgvector_port") or DEFAULT_PGVECTOR_PORT
     pgvector_image = config.get("pgvector_image") or "pgvector/pgvector:pg16"
@@ -86,14 +101,25 @@ def load_settings() -> Settings:
         "arch-review-dev"
     )
     neo4j_storage_size = config.get("neo4j_storage_size") or "1Gi"
+    ollama_base_url = config.get("ollama_base_url") or "http://ollama:11434"
+    llm_model = config.get("llm_model") or "qwen3-8b-12k:latest"
+    llm_temperature = config.get_float("llm_temperature") or 0.0
+    embedding_model = config.get("embedding_model") or "bge-m3:latest"
+    cors_origins_raw = config.get("cors_origins_raw") or (
+        f"http://{ingress_host}:{traefik_http_node_port}"
+    )
 
     if not namespace:
         raise pulumi.RunError("Config 'namespace' must not be empty")
     if not image:
         raise pulumi.RunError("Config 'image' must not be empty")
+    if not frontend_image:
+        raise pulumi.RunError("Config 'frontend_image' must not be empty")
     for key, value in {
         "app_port": app_port,
         "replicas": replicas,
+        "frontend_port": frontend_port,
+        "frontend_replicas": frontend_replicas,
         "traefik_http_node_port": traefik_http_node_port,
         "traefik_https_node_port": traefik_https_node_port,
         "pgvector_port": pgvector_port,
@@ -106,6 +132,7 @@ def load_settings() -> Settings:
         raise pulumi.RunError("Config 'ingress_host' must be a hostname")
     for key, value in {
         "app_name": app_name,
+        "frontend_name": frontend_name,
         "traefik_name": traefik_name,
         "traefik_namespace": traefik_namespace,
         "traefik_ingress_class": traefik_ingress_class,
@@ -135,6 +162,10 @@ def load_settings() -> Settings:
         traefik_http_node_port=traefik_http_node_port,
         traefik_https_node_port=traefik_https_node_port,
         traefik_ingress_class=traefik_ingress_class,
+        frontend_name=frontend_name,
+        frontend_port=frontend_port,
+        frontend_image=frontend_image,
+        frontend_replicas=frontend_replicas,
         pgvector_name=pgvector_name,
         pgvector_port=pgvector_port,
         pgvector_image=pgvector_image,
@@ -149,4 +180,9 @@ def load_settings() -> Settings:
         neo4j_user=neo4j_user,
         neo4j_password=neo4j_password,
         neo4j_storage_size=neo4j_storage_size,
+        ollama_base_url=ollama_base_url,
+        llm_model=llm_model,
+        llm_temperature=llm_temperature,
+        embedding_model=embedding_model,
+        cors_origins_raw=cors_origins_raw,
     )
