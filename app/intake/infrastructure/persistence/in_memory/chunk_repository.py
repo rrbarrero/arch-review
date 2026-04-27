@@ -30,11 +30,13 @@ class InMemoryChunkRepository:
         return [c for c in self._storage.values() if c.status == status]
 
     async def search_similar(
-        self, embedding: list[float], limit: int = 6
+        self, embedding: list[float], limit: int = 6, level: int | None = None
     ) -> Sequence[ScoredChunk]:
         scored: list[ScoredChunk] = []
         for chunk in self._storage.values():
             if chunk.embedding is None:
+                continue
+            if level is not None and chunk.level != level:
                 continue
             scored.append(
                 ScoredChunk(
@@ -45,6 +47,11 @@ class InMemoryChunkRepository:
             )
 
         return sorted(scored, key=lambda item: item.score, reverse=True)[:limit]
+
+    async def get_max_level(self) -> int:
+        if not self._storage:
+            return 0
+        return max(c.level for c in self._storage.values())
 
     async def delete(self, chunk_id: str) -> None:
         self._storage.pop(chunk_id, None)

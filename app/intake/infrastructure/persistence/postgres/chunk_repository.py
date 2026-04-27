@@ -20,10 +20,11 @@ class PostgresChunkRepository:
             await conn.execute(
                 """
                 INSERT INTO chunks (id, document_id, content, position, status,
-                    metadata, created_at, embedding, graph_node_id, error)
+                    metadata, created_at, embedding, graph_node_id, error,
+                    level, parent_ids)
                 VALUES (%(id)s, %(document_id)s, %(content)s, %(position)s,
                     %(status)s, %(metadata)s, %(created_at)s, %(embedding)s,
-                    %(graph_node_id)s, %(error)s)
+                    %(graph_node_id)s, %(error)s, %(level)s, %(parent_ids)s)
                 ON CONFLICT (id) DO UPDATE SET
                     status        = EXCLUDED.status,
                     content       = EXCLUDED.content,
@@ -31,7 +32,9 @@ class PostgresChunkRepository:
                     metadata      = EXCLUDED.metadata,
                     embedding     = EXCLUDED.embedding,
                     graph_node_id = EXCLUDED.graph_node_id,
-                    error         = EXCLUDED.error
+                    error         = EXCLUDED.error,
+                    level         = EXCLUDED.level,
+                    parent_ids    = EXCLUDED.parent_ids
                 """,
                 {
                     "id": chunk.id,
@@ -44,6 +47,8 @@ class PostgresChunkRepository:
                     "embedding": chunk.embedding,
                     "graph_node_id": chunk.graph_node_id,
                     "error": chunk.error,
+                    "level": chunk.level,
+                    "parent_ids": list(chunk.parent_ids),
                 },
             )
 
@@ -54,10 +59,11 @@ class PostgresChunkRepository:
                     await cur.execute(
                         """
                         INSERT INTO chunks (id, document_id, content, position, status,
-                            metadata, created_at, embedding, graph_node_id, error)
+                            metadata, created_at, embedding, graph_node_id, error,
+                            level, parent_ids)
                         VALUES (%(id)s, %(document_id)s, %(content)s, %(position)s,
                             %(status)s, %(metadata)s, %(created_at)s, %(embedding)s,
-                            %(graph_node_id)s, %(error)s)
+                            %(graph_node_id)s, %(error)s, %(level)s, %(parent_ids)s)
                         ON CONFLICT (id) DO UPDATE SET
                             status        = EXCLUDED.status,
                             content       = EXCLUDED.content,
@@ -65,7 +71,9 @@ class PostgresChunkRepository:
                             metadata      = EXCLUDED.metadata,
                             embedding     = EXCLUDED.embedding,
                             graph_node_id = EXCLUDED.graph_node_id,
-                            error         = EXCLUDED.error
+                            error         = EXCLUDED.error,
+                            level         = EXCLUDED.level,
+                            parent_ids    = EXCLUDED.parent_ids
                         """,
                         {
                             "id": chunk.id,
@@ -78,6 +86,8 @@ class PostgresChunkRepository:
                             "embedding": chunk.embedding,
                             "graph_node_id": chunk.graph_node_id,
                             "error": chunk.error,
+                            "level": chunk.level,
+                            "parent_ids": list(chunk.parent_ids),
                         },
                     )
 
@@ -114,23 +124,39 @@ class PostgresChunkRepository:
             return [self._row_to_chunk(r) for r in records]  # ty: ignore[invalid-argument-type]
 
     async def search_similar(
-        self, embedding: list[float], limit: int = 6
+        self, embedding: list[float], limit: int = 6, level: int | None = None
     ) -> Sequence[ScoredChunk]:
         async with self._pool.connection() as conn:
             conn.row_factory = dict_row  # ty: ignore[invalid-assignment]
             vector = self._vector_literal(embedding)
-            cur = await conn.execute(
-                """
-                SELECT c.*, d.source_filename,
-                    1 - (c.embedding <=> %s::vector) AS score
-                FROM chunks c
-                JOIN documents d ON d.id = c.document_id
-                WHERE c.embedding IS NOT NULL
-                ORDER BY c.embedding <=> %s::vector
-                LIMIT %s
-                """,
-                (vector, vector, limit),
-            )
+
+            if level is not None:
+                cur = await conn.execute(
+                    """
+                    SELECT c.*, d.source_filename,
+                        1 - (c.embedding <=> %s::vector) AS score
+                    FROM chunks c
+                    JOIN documents d ON d.id = c.document_id
+                    WHERE c.embedding IS NOT NULL AND c.level = %s
+                    ORDER BY c.embedding <=> %s::vector
+                    LIMIT %s
+                    """,
+                    (vector, level, vector, limit),
+                )
+            else:
+                cur = await conn.execute(
+                    """
+                    SELECT c.*, d.source_filename,
+                        1 - (c.embedding <=> %s::vector) AS score
+                    FROM chunks c
+                    JOIN documents d ON d.id = c.document_id
+                    WHERE c.embedding IS NOT NULL
+                    ORDER BY c.embedding <=> %s::vector
+                    LIMIT %s
+                    """,
+                    (vector, vector, limit),
+                )
+
             records = cast(list[dict[str, Any]], await cur.fetchall())
             return [
                 ScoredChunk(
@@ -141,6 +167,12 @@ class PostgresChunkRepository:
                 for r in records
             ]
 
+    async def get_max_level(self) -> int:
+        async with self._pool.connection() as conn:
+            row = await conn.execute("SELECT COALESCE(MAX(level), 0) AS max_level FROM chunks")
+            record = await row.fetchone()
+            return int(record[0]) if record else 0
+
     async def delete(self, chunk_id: str) -> None:
         async with self._pool.connection() as conn:
             await conn.execute(
@@ -150,6 +182,14 @@ class PostgresChunkRepository:
 
     @staticmethod
     def _row_to_chunk(row: dict[str, Any]) -> DocumentChunk:
+        parent_ids_raw = row.get("parent_ids")
+        if parent_ids_raw is None:
+            parent_ids = ()
+        elif isinstance(parent_ids_raw, list):
+            parent_ids = tuple(str(pid) for pid in parent_ids_raw)
+        else:
+            parent_ids = ()
+
         return DocumentChunk(
             id=row["id"],
             document_id=row["document_id"],
@@ -161,6 +201,8 @@ class PostgresChunkRepository:
             embedding=row["embedding"],
             graph_node_id=row["graph_node_id"],
             error=row["error"],
+            level=row.get("level", 0),
+            parent_ids=parent_ids,
         )
 
     @staticmethod

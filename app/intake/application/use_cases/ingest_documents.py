@@ -84,7 +84,7 @@ class IngestDocumentsUseCase:
                 with tracer.start_as_current_span("process_file") as file_span:
                     file_span.set_attribute("filename", file_input.filename)
                     file_span.set_attribute("size_bytes", len(file_input.content))
-                    result = self._process_file(file_input)
+                    result = await self._process_file(file_input)
 
                 chunks_created_total.labels(content_type=content_type_label).inc(len(result.chunks))
 
@@ -116,7 +116,7 @@ class IngestDocumentsUseCase:
 
         return None
 
-    def _process_file(self, file: FileInput) -> _ProcessResult:
+    async def _process_file(self, file: FileInput) -> _ProcessResult:
         ext = _extension(file.filename)
         now = datetime.now(timezone.utc)
         text = file.content.decode("utf-8")
@@ -140,7 +140,7 @@ class IngestDocumentsUseCase:
         )
 
         if self._raptor_service and chunks:
-            chunks = self._raptor_service.build_tree(list(chunks), document.id)
+            chunks = await self._raptor_service.build_tree(list(chunks), document.id)
 
         return _ProcessResult(document=document, chunks=list(chunks))
 

@@ -32,7 +32,9 @@ class AnswerService:
         context_blocks = "\n\n".join(
             (
                 f"Source {i}: {item.filename} "
-                f"(document_id={item.chunk.document_id}, chunk_id={item.chunk.id})\n"
+                f"(document_id={item.chunk.document_id}, chunk_id={item.chunk.id})"
+                + (f" [level {item.chunk.level} summary]" if item.chunk.level > 0 else "")
+                + "\n"
                 f"{item.chunk.content}"
             )
             for i, item in enumerate(context, start=1)

@@ -33,8 +33,12 @@ SCHEMA_SQL = textwrap.dedent("""\
         error           TEXT
     );
 
+    ALTER TABLE chunks ADD COLUMN IF NOT EXISTS level INT NOT NULL DEFAULT 0;
+    ALTER TABLE chunks ADD COLUMN IF NOT EXISTS parent_ids TEXT[] NOT NULL DEFAULT '{}';
+
     CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks(document_id);
     CREATE INDEX IF NOT EXISTS idx_chunks_status ON chunks(status);
+    CREATE INDEX IF NOT EXISTS idx_chunks_level ON chunks(level);
     CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status);
 """)
 

@@ -47,7 +47,9 @@ CREATE TABLE public.chunks (
     created_at timestamp with time zone NOT NULL,
     embedding public.vector,
     graph_node_id text,
-    error text
+    error text,
+    level integer DEFAULT 0 NOT NULL,
+    parent_ids text[] DEFAULT '{}'::text[] NOT NULL
 );
 
 
@@ -110,6 +112,13 @@ CREATE INDEX idx_chunks_document_id ON public.chunks USING btree (document_id);
 
 
 --
+-- Name: idx_chunks_level; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_chunks_level ON public.chunks USING btree (level);
+
+
+--
 -- Name: idx_chunks_status; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -143,4 +152,5 @@ ALTER TABLE ONLY public.chunks
 --
 
 INSERT INTO public.schema_migrations (version) VALUES
-    ('20250426000001');
+    ('20250426000001'),
+    ('20250427000001');
