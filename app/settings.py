@@ -28,3 +28,8 @@ class Settings(BaseSettings):
     llm_model: str = "qwen3-8b-12k:latest"
     llm_temperature: float = 0.0
     embedding_model: str = "bge-m3:latest"
+
+    otel_service_name: str = "arch-review"
+    otel_exporter_otlp_endpoint: str = "http://tempo:4317"
+    otel_metrics_exporter: str = "otlp"
+    otel_logs_exporter: str = "otlp"

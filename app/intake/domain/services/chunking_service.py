@@ -2,6 +2,8 @@ import uuid
 from collections.abc import Sequence
 from datetime import datetime, timezone
 
+from opentelemetry import trace
+
 from app.intake.domain.entities.chunk import DocumentChunk
 from app.intake.domain.services.strategies import (
     ChunkingStrategy,
@@ -9,6 +11,8 @@ from app.intake.domain.services.strategies import (
     PythonChunkingStrategy,
 )
 from app.intake.domain.value_objects import ChunkStatus, Metadata
+
+tracer = trace.get_tracer(__name__)
 
 
 class _ParagraphFallbackStrategy:
@@ -41,14 +45,20 @@ class ChunkingService:
         self._fallback = _ParagraphFallbackStrategy()
 
     def chunk(self, document_id: str, content: str, content_type: str = "") -> Sequence[DocumentChunk]:
-        strategy = self._strategies.get(content_type, self._fallback)
-        segments = strategy.chunk(content)
-        now = datetime.now(timezone.utc)
+        with tracer.start_as_current_span("chunk") as span:
+            span.set_attribute("document_id", document_id)
+            span.set_attribute("content_type", content_type)
+            span.set_attribute("content_length", len(content))
+            strategy = self._strategies.get(content_type, self._fallback)
+            segments = strategy.chunk(content)
+            now = datetime.now(timezone.utc)
 
-        return [
-            self._build_chunk(document_id, i, segment, now)
-            for i, segment in enumerate(segments)
-        ]
+            chunks = [
+                self._build_chunk(document_id, i, segment, now)
+                for i, segment in enumerate(segments)
+            ]
+            span.set_attribute("chunk_count", len(chunks))
+            return chunks
 
     @staticmethod
     def _build_chunk(

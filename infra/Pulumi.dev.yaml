@@ -28,3 +28,18 @@ config:
   arch-review:neo4j_image: neo4j:5-community
   arch-review:neo4j_user: neo4j
   arch-review:neo4j_storage_size: 256Mi
+  arch-review:tempo_name: tempo
+  arch-review:tempo_image: grafana/tempo:latest
+  arch-review:tempo_http_port: "3200"
+  arch-review:tempo_otlp_grpc_port: "4317"
+  arch-review:tempo_otlp_http_port: "4318"
+  arch-review:loki_name: loki
+  arch-review:loki_image: grafana/loki:latest
+  arch-review:loki_port: "3100"
+  arch-review:prometheus_name: prometheus
+  arch-review:prometheus_image: prom/prometheus:latest
+  arch-review:prometheus_port: "9090"
+  arch-review:grafana_name: grafana
+  arch-review:grafana_image: grafana/grafana:latest
+  arch-review:grafana_port: "3000"
+  arch-review:grafana_host: grafana.arch-review.local

@@ -8,6 +8,9 @@ services:
     container_name: arch-review-backend
     env_file:
       - .env
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+      OTEL_SERVICE_NAME: arch-review
     ports:
       - "8000:8000"
     volumes:
@@ -18,6 +21,8 @@ services:
         condition: service_healthy
       neo4j:
         condition: service_healthy
+      tempo:
+        condition: service_started
     command: uv run fastapi dev app/main.py --host 0.0.0.0 --port 8000
 
   pgvector:
@@ -88,6 +93,47 @@ services:
       - app
     command: sh -lc "CI=true pnpm install --frozen-lockfile --store-dir /app/.pnpm-store && pnpm dev --hostname 0.0.0.0 --port 3000"
 
+  tempo:
+    image: grafana/tempo:latest
+    container_name: arch-review-tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    user: root
+    volumes:
+      - ./ops/tempo.yaml:/etc/tempo.yaml
+      - tempo-data:/var/tempo
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+  loki:
+    image: grafana/loki:latest
+    container_name: arch-review-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki-data:/loki
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: arch-review-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./ops/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: arch-review-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./ops/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./ops/grafana-dashboard-provider.yml:/etc/grafana/provisioning/dashboards/dashboard-provider.yml
+      - ./ops/grafana-dashboards/arch-review.json:/etc/grafana/provisioning/dashboards/arch-review.json
+
   rustfs:
     image: rustfs/rustfs:latest
     container_name: rustfs-server
@@ -102,3 +148,6 @@ services:
 volumes:
   pgvector-data:
   neo4j-data:
+  tempo-data:
+  loki-data:
+  grafana-data:

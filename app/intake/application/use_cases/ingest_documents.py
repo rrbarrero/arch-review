@@ -1,7 +1,10 @@
+import logging
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
+
+from opentelemetry import trace
 
 from app.intake.application.dto.ingest_dto import (
     DocumentResult,
@@ -17,6 +20,14 @@ from app.intake.domain.services.embedding_service import EmbeddingService
 from app.intake.domain.services.raptor_service import RaptorService
 from app.intake.domain.value_objects import Metadata, ProcessingStatus, Source
 from app.intake.infrastructure.external_services.neo4j import Neo4jGraphService
+from app.metrics import (
+    chunks_created_total,
+    documents_ingest_errors_total,
+    documents_ingested_total,
+)
+
+logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 
 MAX_FILE_SIZE = 500 * 1024
 ALLOWED_EXTENSIONS = {".md", ".py"}
@@ -55,26 +66,44 @@ class IngestDocumentsUseCase:
         self._graph_service = graph_service
 
     async def execute(self, files: Sequence[FileInput]) -> IngestDocumentsOutput:
-        output = IngestDocumentsOutput()
+        with tracer.start_as_current_span("ingest_documents") as span:
+            span.set_attribute("file_count", len(files))
+            output = IngestDocumentsOutput()
 
-        for file_input in files:
-            error = self._validate(file_input)
-            if error:
-                output.errors.append(error)
-                continue
+            for file_input in files:
+                error = self._validate(file_input)
+                if error:
+                    documents_ingest_errors_total.labels(reason="validation").inc()
+                    logger.warning("validation_failed", extra={"file": file_input.filename, "error": error})
+                    output.errors.append(error)
+                    continue
 
-            result = self._process_file(file_input)
+                ext = _extension(file_input.filename)
+                content_type_label = ext.lstrip(".")
 
-            try:
-                result = await self._enrich(result)
-            except Exception as e:
-                output.errors.append(f"{file_input.filename}: enrichment failed: {e}")
-                continue
+                with tracer.start_as_current_span("process_file") as file_span:
+                    file_span.set_attribute("filename", file_input.filename)
+                    file_span.set_attribute("size_bytes", len(file_input.content))
+                    result = self._process_file(file_input)
 
-            await self._persist(result)
-            output.documents.append(self._to_result(result))
+                chunks_created_total.labels(content_type=content_type_label).inc(len(result.chunks))
 
-        return output
+                try:
+                    result = await self._enrich(result)
+                except Exception as e:
+                    documents_ingest_errors_total.labels(reason="enrichment_failed").inc()
+                    logger.exception("enrichment_failed", extra={"file": file_input.filename})
+                    output.errors.append(f"{file_input.filename}: enrichment failed: {e}")
+                    continue
+
+                await self._persist(result)
+                documents_ingested_total.labels(content_type=content_type_label, status="success").inc()
+                output.documents.append(self._to_result(result))
+
+            span.set_attribute("document_count", len(output.documents))
+            span.set_attribute("error_count", len(output.errors))
+            logger.info("ingest_completed", extra={"documents": len(output.documents), "errors": len(output.errors)})
+            return output
 
     def _validate(self, file: FileInput) -> str | None:
         ext = _extension(file.filename)
@@ -116,15 +145,18 @@ class IngestDocumentsUseCase:
         return _ProcessResult(document=document, chunks=list(chunks))
 
     async def _enrich(self, result: _ProcessResult) -> _ProcessResult:
-        chunks = list(result.chunks)
+        with tracer.start_as_current_span("enrich") as span:
+            span.set_attribute("document_id", result.document.id)
+            chunks = list(result.chunks)
 
-        if self._embedding_service and chunks:
-            chunks = await self._embedding_service.embed(chunks)
+            if self._embedding_service and chunks:
+                chunks = await self._embedding_service.embed(chunks)
 
-        if self._graph_service and chunks:
-            chunks = await self._graph_service.create_nodes(chunks, result.document.id)
+            if self._graph_service and chunks:
+                chunks = await self._graph_service.create_nodes(chunks, result.document.id)
 
-        return _ProcessResult(document=result.document, chunks=chunks)
+            span.set_attribute("chunk_count", len(chunks))
+            return _ProcessResult(document=result.document, chunks=chunks)
 
     async def _persist(self, result: _ProcessResult) -> None:
         await self._document_repository.save(result.document)

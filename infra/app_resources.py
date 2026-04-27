@@ -116,6 +116,17 @@ def create_app(
                                     "name": "EMBEDDING_MODEL",
                                     "value": settings.embedding_model,
                                 },
+                                {
+                                    "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
+                                    "value": pulumi.Output.concat(
+                                        "http://", settings.tempo_name, ":",
+                                        str(settings.tempo_otlp_grpc_port),
+                                    ),
+                                },
+                                {
+                                    "name": "OTEL_SERVICE_NAME",
+                                    "value": "arch-review",
+                                },
                             ],
                             "readinessProbe": {
                                 "httpGet": {

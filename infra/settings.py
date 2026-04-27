@@ -7,11 +7,21 @@ from common import (
     DEFAULT_APP_PORT,
     DEFAULT_FRONTEND_NAME,
     DEFAULT_FRONTEND_PORT,
+    DEFAULT_GRAFANA_NAME,
+    DEFAULT_GRAFANA_PORT,
+    DEFAULT_LOKI_NAME,
+    DEFAULT_LOKI_PORT,
     DEFAULT_NEO4J_BOLT_PORT,
     DEFAULT_NEO4J_HTTP_PORT,
     DEFAULT_NEO4J_NAME,
     DEFAULT_PGVECTOR_NAME,
     DEFAULT_PGVECTOR_PORT,
+    DEFAULT_PROMETHEUS_NAME,
+    DEFAULT_PROMETHEUS_PORT,
+    DEFAULT_TEMPO_NAME,
+    DEFAULT_TEMPO_HTTP_PORT,
+    DEFAULT_TEMPO_OTLP_GRPC_PORT,
+    DEFAULT_TEMPO_OTLP_HTTP_PORT,
     DEFAULT_TRAEFIK_HTTPS_NODE_PORT,
     DEFAULT_TRAEFIK_HTTP_NODE_PORT,
     DEFAULT_TRAEFIK_INGRESS_CLASS,
@@ -57,6 +67,22 @@ class Settings:
     llm_temperature: float
     embedding_model: str
     cors_origins_raw: str
+
+    tempo_name: str
+    tempo_image: str
+    tempo_http_port: int
+    tempo_otlp_grpc_port: int
+    tempo_otlp_http_port: int
+    loki_name: str
+    loki_image: str
+    loki_port: int
+    prometheus_name: str
+    prometheus_image: str
+    prometheus_port: int
+    grafana_name: str
+    grafana_image: str
+    grafana_port: int
+    grafana_host: str
 
 
 def load_settings() -> Settings:
@@ -108,6 +134,22 @@ def load_settings() -> Settings:
     cors_origins_raw = config.get("cors_origins_raw") or (
         f"http://{ingress_host}:{traefik_http_node_port}"
     )
+
+    tempo_name = config.get("tempo_name") or DEFAULT_TEMPO_NAME
+    tempo_image = config.get("tempo_image") or "grafana/tempo:latest"
+    tempo_http_port = config.get_int("tempo_http_port") or DEFAULT_TEMPO_HTTP_PORT
+    tempo_otlp_grpc_port = config.get_int("tempo_otlp_grpc_port") or DEFAULT_TEMPO_OTLP_GRPC_PORT
+    tempo_otlp_http_port = config.get_int("tempo_otlp_http_port") or DEFAULT_TEMPO_OTLP_HTTP_PORT
+    loki_name = config.get("loki_name") or DEFAULT_LOKI_NAME
+    loki_image = config.get("loki_image") or "grafana/loki:latest"
+    loki_port = config.get_int("loki_port") or DEFAULT_LOKI_PORT
+    prometheus_name = config.get("prometheus_name") or DEFAULT_PROMETHEUS_NAME
+    prometheus_image = config.get("prometheus_image") or "prom/prometheus:latest"
+    prometheus_port = config.get_int("prometheus_port") or DEFAULT_PROMETHEUS_PORT
+    grafana_name = config.get("grafana_name") or DEFAULT_GRAFANA_NAME
+    grafana_image = config.get("grafana_image") or "grafana/grafana:latest"
+    grafana_port = config.get_int("grafana_port") or DEFAULT_GRAFANA_PORT
+    grafana_host = config.get("grafana_host") or f"grafana.{ingress_host}"
 
     if not namespace:
         raise pulumi.RunError("Config 'namespace' must not be empty")
@@ -185,4 +227,20 @@ def load_settings() -> Settings:
         llm_temperature=llm_temperature,
         embedding_model=embedding_model,
         cors_origins_raw=cors_origins_raw,
+
+        tempo_name=tempo_name,
+        tempo_image=tempo_image,
+        tempo_http_port=tempo_http_port,
+        tempo_otlp_grpc_port=tempo_otlp_grpc_port,
+        tempo_otlp_http_port=tempo_otlp_http_port,
+        loki_name=loki_name,
+        loki_image=loki_image,
+        loki_port=loki_port,
+        prometheus_name=prometheus_name,
+        prometheus_image=prometheus_image,
+        prometheus_port=prometheus_port,
+        grafana_name=grafana_name,
+        grafana_image=grafana_image,
+        grafana_port=grafana_port,
+        grafana_host=grafana_host,
     )

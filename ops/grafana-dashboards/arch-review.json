@@ -1,0 +1,145 @@
+{
+  "title": "Arch Review",
+  "uid": "arch-review",
+  "version": 1,
+  "timezone": "browser",
+  "panels": [
+    {
+      "title": "HTTP Requests Rate",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 0, "w": 8, "h": 8},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "rate(http_requests_total{path!~\"/metrics.*\"}[1m])",
+          "legendFormat": "{{method}} {{path}}"
+        }
+      ]
+    },
+    {
+      "title": "HTTP Request Duration (p95)",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 8, "y": 0, "w": 8, "h": 8},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{path!~\"/metrics.*\"}[1m]))",
+          "legendFormat": "p95 {{method}} {{path}}"
+        }
+      ]
+    },
+    {
+      "title": "HTTP Request Duration (p50)",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 16, "y": 0, "w": 8, "h": 8},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "histogram_quantile(0.5, rate(http_request_duration_seconds_bucket{path!~\"/metrics.*\"}[1m]))",
+          "legendFormat": "p50 {{method}} {{path}}"
+        }
+      ]
+    },
+    {
+      "title": "Documents Ingested",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 8, "w": 4, "h": 6},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "sum(documents_ingested_total)"
+        }
+      ]
+    },
+    {
+      "title": "Questions Answered",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 4, "y": 8, "w": 4, "h": 6},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "sum(questions_answered_total)"
+        }
+      ]
+    },
+    {
+      "title": "Ingest Errors",
+      "type": "stat",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 8, "y": 8, "w": 4, "h": 6},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "sum(documents_ingest_errors_total)"
+        }
+      ]
+    },
+    {
+      "title": "Documents Ingested by Type",
+      "type": "piechart",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 12, "y": 8, "w": 6, "h": 6},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "sum by (content_type) (documents_ingested_total)"
+        }
+      ]
+    },
+    {
+      "title": "Ingest Errors by Reason",
+      "type": "piechart",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 18, "y": 8, "w": 6, "h": 6},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "sum by (reason) (documents_ingest_errors_total)"
+        }
+      ]
+    },
+    {
+      "title": "Chunks Retrieved per Question",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 0, "y": 14, "w": 8, "h": 8},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "rate(context_chunks_retrieved_sum[1m]) / rate(context_chunks_retrieved_count[1m])",
+          "legendFormat": "avg chunks"
+        }
+      ]
+    },
+    {
+      "title": "Chunks Created",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 8, "y": 14, "w": 8, "h": 8},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "rate(chunks_created_total[1m])",
+          "legendFormat": "{{content_type}}"
+        }
+      ]
+    },
+    {
+      "title": "Chunks Embedded",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "gridPos": {"x": 16, "y": 14, "w": 8, "h": 8},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "expr": "rate(chunks_embedded_total[1m])"
+        }
+      ]
+    }
+  ]
+}

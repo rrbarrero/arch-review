@@ -81,11 +81,13 @@ pulumi-up: infra-deps
 deploy: kind-create app-image-push frontend-image-push pulumi-up
 
 dev: check-env
-	docker compose up -d app
+	docker compose up -d
 	docker compose run --rm dbmate
-	docker compose up -d frontend
-	@echo "Backend:  http://localhost:8000"
-	@echo "Frontend: http://localhost:3000"
+	@echo "Backend:    http://localhost:8000"
+	@echo "Frontend:   http://localhost:3000"
+	@echo "Grafana:    http://localhost:3001"
+	@echo "Prometheus: http://localhost:9090"
+	@echo "Loki:       http://localhost:3100"
 
 dbmate:
 	docker compose run --rm dbmate
