@@ -17,6 +17,25 @@ The application currently exposes two primary workflows:
 
 The local development UI is available at `http://localhost:3000` and the backend API at `http://localhost:8000`.
 
+## Observability
+
+The project includes a full observability stack based on OpenTelemetry and the Grafana ecosystem:
+
+| Service | Role | Local URL |
+|---|---|---|
+| **Tempo** | Traces (OTLP receiver) | `http://localhost:4317` (gRPC) |
+| **Loki** | Log aggregation | `http://localhost:3100` |
+| **Prometheus** | Metrics scraping | `http://localhost:9090` |
+| **Grafana** | Dashboards & visualization | `http://localhost:3001` |
+
+The Python backend is instrumented with OpenTelemetry:
+- **Traces** via `opentelemetry-instrumentation-fastapi`, `-httpx`, `-psycopg` with OTLP export to Tempo
+- **Metrics** via `prometheus-client` at `/metrics/`, scraped by Prometheus (HTTP request rate/duration, documents ingested, questions answered, chunks created/embedded/retrieved)
+- **Logs** via structured logging with trace/span correlation for Loki
+- Custom spans in use cases (`IngestDocumentsUseCase`, `AnswerQuestionUseCase`) and domain services
+
+In Kubernetes, the same stack is deployed via Pulumi with ConfigMaps, Deployments, Services, and a dedicated Ingress for Grafana (`grafana.arch-review.local`).
+
 ## Quick Start
 
 ```bash
@@ -30,6 +49,8 @@ For the local Docker Compose development loop:
 ```bash
 make dev
 ```
+
+This starts all services including the observability stack (Tempo, Loki, Prometheus, Grafana).
 
 The frontend service runs Next.js in development mode so UI changes are reflected without rebuilding the production image. The frontend installs dependencies inside the container using the lockfile before starting.
 
@@ -48,6 +69,11 @@ This section tracks the main implementation milestones and architectural decisio
 
 ### 2026-04-27
 
+- Added full observability stack: OpenTelemetry instrumentation (traces, metrics, structured logs), Tempo for traces, Loki for logs, Prometheus for metrics, and Grafana for visualization.
+- Instrumented the Python backend with auto-instrumentation (FastAPI, httpx, psycopg) and manual spans in use cases and domain services.
+- Added Prometheus metrics for HTTP request rate/duration, documents ingested, questions answered, chunks created/embedded/retrieved.
+- Created a Grafana dashboard with 11 panels covering business and operational metrics, auto-provisioned via ConfigMap in K8s and file mount in Docker Compose.
+- Deployed the observability stack both in Docker Compose (local dev) and Kubernetes via Pulumi (Tempo, Loki, Prometheus, Grafana with Ingress through Traefik).
 - Added the first architecture review chat iteration, closing the initial RAG loop from ingestion to question answering.
 - Introduced a new `chat` bounded context in the backend with DTOs, retrieval service, answer service, use case, factory, and FastAPI router.
 - Added `POST /chat`, accepting chat messages and returning generated answer text plus structured citations.
