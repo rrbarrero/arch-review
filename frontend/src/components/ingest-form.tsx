@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useId, useRef, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useIngest } from "@/hooks/use-ingest"
@@ -23,6 +23,7 @@ interface FileItem {
 }
 
 export function IngestForm() {
+  const inputId = useId()
   const [files, setFiles] = useState<FileItem[]>([])
   const [errors, setErrors] = useState<string[]>([])
   const [isDragOver, setIsDragOver] = useState(false)
@@ -63,6 +64,7 @@ export function IngestForm() {
         prev.map((f) => (f.status === "pending" ? { ...f, status: "uploading" as const } : f)),
       )
       ingest(selected)
+      e.target.value = ""
     },
     [ingest],
   )
@@ -100,6 +102,7 @@ export function IngestForm() {
         prev.map((f) => (f.status === "pending" ? { ...f, status: "uploading" as const } : f)),
       )
       ingest(dropped)
+      if (inputRef.current) inputRef.current.value = ""
     },
     [ingest],
   )
@@ -131,14 +134,31 @@ export function IngestForm() {
           )}
         </div>
         <CardDescription className="text-sm leading-6 text-gray-500">
-          Upload <code className="rounded bg-pearl-aqua-900 px-1 py-0.5 text-xs font-mono text-stormy-teal">.md</code> or <code className="rounded bg-pearl-aqua-900 px-1 py-0.5 text-xs font-mono text-stormy-teal">.py</code> files (max 500 KB each)
+          Upload{" "}
+          <code className="rounded bg-pearl-aqua-900 px-1 py-0.5 text-xs font-mono text-stormy-teal">
+            .md
+          </code>{" "}
+          or{" "}
+          <code className="rounded bg-pearl-aqua-900 px-1 py-0.5 text-xs font-mono text-stormy-teal">
+            .py
+          </code>{" "}
+          files (max 500 KB each)
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 p-4">
-        <label
+        <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onClick={() => inputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault()
+              inputRef.current?.click()
+            }
+          }}
+          role="button"
+          tabIndex={0}
           className={`group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-4 py-7 text-center transition-all ${
             isDragOver
               ? "border-stormy-teal bg-stormy-teal/5 shadow-inner"
@@ -163,6 +183,7 @@ export function IngestForm() {
             </span>
           </span>
           <Input
+            id={inputId}
             ref={inputRef}
             type="file"
             multiple
@@ -170,7 +191,7 @@ export function IngestForm() {
             className="sr-only"
             onChange={onSelectFiles}
           />
-        </label>
+        </div>
 
         <div className="grid grid-cols-3 gap-2.5">
           <div className="rounded-lg border border-pearl-aqua-700/50 bg-gradient-to-b from-alice-blue-900 to-white p-3 shadow-sm">
@@ -184,10 +205,10 @@ export function IngestForm() {
           <div className="rounded-lg border border-pearl-aqua-700/50 bg-gradient-to-b from-almond-silk-900 to-white p-3 shadow-sm">
             <p className="text-xs text-gray-400">Chunks</p>
             <div className="flex items-baseline gap-1">
-              <span className="mt-1 text-xl font-semibold text-tangerine-dream-400">{totalChunks}</span>
-              {uploadingCount > 0 && (
-                <Loader2 className="h-3 w-3 animate-spin text-stormy-teal" />
-              )}
+              <span className="mt-1 text-xl font-semibold text-tangerine-dream-400">
+                {totalChunks}
+              </span>
+              {uploadingCount > 0 && <Loader2 className="h-3 w-3 animate-spin text-stormy-teal" />}
             </div>
           </div>
         </div>
@@ -255,7 +276,10 @@ export function IngestForm() {
         {files.length === 0 && !errors.length && (
           <div className="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-stormy-teal/5 to-pearl-aqua-900/30 px-3 py-2.5 text-xs text-gray-400">
             <Sparkles className="h-3.5 w-3.5 text-stormy-teal" />
-            <span>Accepted formats: <code className="font-mono text-stormy-teal">.md</code> and <code className="font-mono text-stormy-teal">.py</code></span>
+            <span>
+              Accepted formats: <code className="font-mono text-stormy-teal">.md</code> and{" "}
+              <code className="font-mono text-stormy-teal">.py</code>
+            </span>
           </div>
         )}
       </CardContent>

@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { marked } from "marked"
 
-marked.setOptions({
+marked.use({
   gfm: true,
   breaks: false,
 })
