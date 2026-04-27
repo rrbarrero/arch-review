@@ -171,7 +171,11 @@ class PostgresChunkRepository:
         async with self._pool.connection() as conn:
             row = await conn.execute("SELECT COALESCE(MAX(level), 0) AS max_level FROM chunks")
             record = await row.fetchone()
-            return int(record[0]) if record else 0
+            if not record:
+                return 0
+            if isinstance(record, dict):
+                return int(record["max_level"])
+            return int(record[0])
 
     async def delete(self, chunk_id: str) -> None:
         async with self._pool.connection() as conn:

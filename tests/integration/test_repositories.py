@@ -246,3 +246,36 @@ async def test_cascade_delete_document_removes_chunks_in_postgres(
 
     await pg_document_repo.delete("cascade-doc")
     assert await pg_chunk_repo.find_by_id("cascade-chunk") is None
+
+
+@pytest.mark.asyncio
+async def test_get_max_level_after_dict_row_query(
+    pg_document_repo,
+    pg_chunk_repo,
+) -> None:
+    now = datetime.now(timezone.utc)
+    doc = Document(
+        id="level-doc",
+        source=Source("levels.py", "text/x-python", 100),
+        status=ProcessingStatus.PENDING,
+        raw_text=None,
+        metadata=Metadata(),
+        created_at=now,
+        updated_at=now,
+    )
+    chunk = DocumentChunk(
+        id="level-chunk",
+        document_id="level-doc",
+        content="summary",
+        position=0,
+        status=ChunkStatus.EMBEDDED,
+        metadata=Metadata(),
+        created_at=now,
+        level=2,
+    )
+
+    await pg_document_repo.save(doc)
+    await pg_chunk_repo.save(chunk)
+
+    assert await pg_chunk_repo.find_by_id("level-chunk") is not None
+    assert await pg_chunk_repo.get_max_level() == 2

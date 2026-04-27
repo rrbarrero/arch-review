@@ -1,5 +1,5 @@
 const MAX_FILE_SIZE = 500 * 1024
-const ALLOWED_EXTENSIONS: readonly string[] = [".md", ".py"]
+const ALLOWED_EXTENSIONS: readonly string[] = [".md", ".py", ".toml", ".json", ".txt", ".ts", ".yml", ".yaml"]
 
 function extension(filename: string): string {
   const dot = filename.lastIndexOf(".")

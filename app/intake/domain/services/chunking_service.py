@@ -9,6 +9,7 @@ from app.intake.domain.services.strategies import (
     ChunkingStrategy,
     MarkdownChunkingStrategy,
     PythonChunkingStrategy,
+    TypeScriptChunkingStrategy,
 )
 from app.intake.domain.value_objects import ChunkStatus, Metadata
 
@@ -36,6 +37,7 @@ class _ParagraphFallbackStrategy:
 _CONTENT_TYPE_MAP: dict[str, ChunkingStrategy] = {
     "text/markdown": MarkdownChunkingStrategy(),
     "text/x-python": PythonChunkingStrategy(),
+    "text/x-typescript": TypeScriptChunkingStrategy(),
 }
 
 

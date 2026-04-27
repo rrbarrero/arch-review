@@ -15,7 +15,7 @@ export function MarkdownText({ text }: { text: string }) {
 
   return (
     <div
-      className="markdown-body text-sm leading-6 text-gray-700"
+      className="markdown-body text-sm leading-6 text-console-ink"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )

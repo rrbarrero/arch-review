@@ -1,4 +1,4 @@
-.PHONY: install env-init check-tools compose-infra provision kind-create kind-delete kind-status s3-bucket pulumi-dev-stack infra-deps pulumi-preview pulumi-up app-image-build app-image-load app-image-push app-deploy frontend-image-build frontend-image-load frontend-image-push frontend-deploy check-env dev test ruff ty lint uv-add-dev
+.PHONY: install env-init check-tools compose-infra provision kind-create kind-delete kind-status s3-bucket pulumi-dev-stack infra-deps pulumi-preview pulumi-up app-image-build app-image-load app-image-push app-deploy frontend-image-build frontend-image-load frontend-image-push frontend-deploy check-env db-migrate dbmate dev test ruff ty lint uv-add-dev
 
 ENV_FILE ?= .env
 
@@ -80,17 +80,18 @@ pulumi-up: infra-deps
 
 deploy: kind-create app-image-push frontend-image-push pulumi-up
 
-dev: check-env
-	docker compose up -d
+db-migrate: compose-infra
 	docker compose run --rm dbmate
+
+dev: db-migrate
+	docker compose up -d app frontend tempo loki prometheus grafana
 	@echo "Backend:    http://localhost:8000"
 	@echo "Frontend:   http://localhost:3000"
 	@echo "Grafana:    http://localhost:3001"
 	@echo "Prometheus: http://localhost:9090"
 	@echo "Loki:       http://localhost:3100"
 
-dbmate:
-	docker compose run --rm dbmate
+dbmate: db-migrate
 
 test:
 	docker compose run --rm app uv run pytest tests/ -v

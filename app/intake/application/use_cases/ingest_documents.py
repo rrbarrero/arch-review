@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
 
 MAX_FILE_SIZE = 500 * 1024
-ALLOWED_EXTENSIONS = {".md", ".py"}
+ALLOWED_EXTENSIONS = {".md", ".py", ".toml", ".json", ".txt", ".ts", ".yml", ".yaml"}
 
 
 def _extension(filename: str) -> str:
@@ -39,7 +39,16 @@ def _extension(filename: str) -> str:
 
 
 def _content_type(ext: str) -> str:
-    return {"md": "text/markdown", "py": "text/x-python"}.get(ext, "application/octet-stream")
+    return {
+        "md": "text/markdown",
+        "py": "text/x-python",
+        "toml": "text/x-toml",
+        "json": "application/json",
+        "txt": "text/plain",
+        "ts": "text/x-typescript",
+        "yml": "text/yaml",
+        "yaml": "text/yaml",
+    }.get(ext, "application/octet-stream")
 
 
 @dataclass

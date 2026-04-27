@@ -58,17 +58,95 @@ class TestIngestDocuments:
         assert doc.source.content_type == "text/x-python"
 
     @pytest.mark.asyncio
+    async def test_ingest_single_typescript(self, use_case) -> None:
+        files = [self._file("component.ts", "const x: number = 1;\n\nexport default x;")]
+        output = await use_case.execute(files)
+
+        assert len(output.documents) == 1
+        assert output.errors == []
+        assert output.documents[0].filename == "component.ts"
+
+        doc_id = output.documents[0].document_id
+        doc = await use_case._document_repository.find_by_id(doc_id)
+        assert doc.source.content_type == "text/x-typescript"
+
+    @pytest.mark.asyncio
+    async def test_ingest_single_toml(self, use_case) -> None:
+        files = [self._file("config.toml", "[tool]\nname = 'test'\n")]
+        output = await use_case.execute(files)
+
+        assert len(output.documents) == 1
+        assert output.errors == []
+        assert output.documents[0].filename == "config.toml"
+
+        doc_id = output.documents[0].document_id
+        doc = await use_case._document_repository.find_by_id(doc_id)
+        assert doc.source.content_type == "text/x-toml"
+
+    @pytest.mark.asyncio
+    async def test_ingest_single_json(self, use_case) -> None:
+        files = [self._file("data.json", '{"key": "value"}')]
+        output = await use_case.execute(files)
+
+        assert len(output.documents) == 1
+        assert output.errors == []
+        assert output.documents[0].filename == "data.json"
+
+        doc_id = output.documents[0].document_id
+        doc = await use_case._document_repository.find_by_id(doc_id)
+        assert doc.source.content_type == "application/json"
+
+    @pytest.mark.asyncio
+    async def test_ingest_single_txt(self, use_case) -> None:
+        files = [self._file("notes.txt", "Just some plain text.")]
+        output = await use_case.execute(files)
+
+        assert len(output.documents) == 1
+        assert output.errors == []
+        assert output.documents[0].filename == "notes.txt"
+
+        doc_id = output.documents[0].document_id
+        doc = await use_case._document_repository.find_by_id(doc_id)
+        assert doc.source.content_type == "text/plain"
+
+    @pytest.mark.asyncio
+    async def test_ingest_single_yaml(self, use_case) -> None:
+        files = [self._file("config.yml", "key: value\n")]
+        output = await use_case.execute(files)
+
+        assert len(output.documents) == 1
+        assert output.errors == []
+        assert output.documents[0].filename == "config.yml"
+
+        doc_id = output.documents[0].document_id
+        doc = await use_case._document_repository.find_by_id(doc_id)
+        assert doc.source.content_type == "text/yaml"
+
+    @pytest.mark.asyncio
+    async def test_ingest_single_yaml_with_yaml_ext(self, use_case) -> None:
+        files = [self._file("config.yaml", "key: value\n")]
+        output = await use_case.execute(files)
+
+        assert len(output.documents) == 1
+        assert output.errors == []
+        assert output.documents[0].filename == "config.yaml"
+
+        doc_id = output.documents[0].document_id
+        doc = await use_case._document_repository.find_by_id(doc_id)
+        assert doc.source.content_type == "text/yaml"
+
+    @pytest.mark.asyncio
     async def test_ingest_multiple_files(self, use_case) -> None:
         files = [
             self._file("a.md", "# A"),
             self._file("b.py", "x = 1"),
-            self._file("c.md", "# C"),
+            self._file("c.toml", "[tool]\nname = 'test'\n"),
         ]
         output = await use_case.execute(files)
 
         assert len(output.documents) == 3
         assert output.errors == []
-        assert [d.filename for d in output.documents] == ["a.md", "b.py", "c.md"]
+        assert [d.filename for d in output.documents] == ["a.md", "b.py", "c.toml"]
 
     @pytest.mark.asyncio
     async def test_reject_unsupported_extension(self, use_case) -> None:
