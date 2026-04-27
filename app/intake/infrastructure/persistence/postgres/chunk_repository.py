@@ -1,9 +1,11 @@
 from collections.abc import Sequence
+from typing import Any, cast
 
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from psycopg_pool import AsyncConnectionPool
 
+from app.chat.domain.services.retrieval_service import ScoredChunk
 from app.intake.domain.entities.chunk import DocumentChunk
 from app.intake.domain.value_objects.metadata import Metadata
 from app.intake.domain.value_objects.status import ChunkStatus
@@ -111,6 +113,34 @@ class PostgresChunkRepository:
             records = await cur.fetchall()
             return [self._row_to_chunk(r) for r in records]  # ty: ignore[invalid-argument-type]
 
+    async def search_similar(
+        self, embedding: list[float], limit: int = 6
+    ) -> Sequence[ScoredChunk]:
+        async with self._pool.connection() as conn:
+            conn.row_factory = dict_row  # ty: ignore[invalid-assignment]
+            vector = self._vector_literal(embedding)
+            cur = await conn.execute(
+                """
+                SELECT c.*, d.source_filename,
+                    1 - (c.embedding <=> %s::vector) AS score
+                FROM chunks c
+                JOIN documents d ON d.id = c.document_id
+                WHERE c.embedding IS NOT NULL
+                ORDER BY c.embedding <=> %s::vector
+                LIMIT %s
+                """,
+                (vector, vector, limit),
+            )
+            records = cast(list[dict[str, Any]], await cur.fetchall())
+            return [
+                ScoredChunk(
+                    chunk=self._row_to_chunk(r),
+                    filename=r["source_filename"],
+                    score=float(r["score"]),
+                )
+                for r in records
+            ]
+
     async def delete(self, chunk_id: str) -> None:
         async with self._pool.connection() as conn:
             await conn.execute(
@@ -119,7 +149,7 @@ class PostgresChunkRepository:
             )
 
     @staticmethod
-    def _row_to_chunk(row: dict) -> DocumentChunk:
+    def _row_to_chunk(row: dict[str, Any]) -> DocumentChunk:
         return DocumentChunk(
             id=row["id"],
             document_id=row["document_id"],
@@ -132,3 +162,7 @@ class PostgresChunkRepository:
             graph_node_id=row["graph_node_id"],
             error=row["error"],
         )
+
+    @staticmethod
+    def _vector_literal(embedding: list[float]) -> str:
+        return "[" + ",".join(str(value) for value in embedding) + "]"

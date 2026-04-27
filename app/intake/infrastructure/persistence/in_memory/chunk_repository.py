@@ -1,5 +1,7 @@
 from collections.abc import Sequence
+from math import sqrt
 
+from app.chat.domain.services.retrieval_service import ScoredChunk
 from app.intake.domain.entities.chunk import DocumentChunk
 from app.intake.domain.value_objects.status import ChunkStatus
 
@@ -27,5 +29,34 @@ class InMemoryChunkRepository:
     async def find_by_status(self, status: ChunkStatus) -> Sequence[DocumentChunk]:
         return [c for c in self._storage.values() if c.status == status]
 
+    async def search_similar(
+        self, embedding: list[float], limit: int = 6
+    ) -> Sequence[ScoredChunk]:
+        scored: list[ScoredChunk] = []
+        for chunk in self._storage.values():
+            if chunk.embedding is None:
+                continue
+            scored.append(
+                ScoredChunk(
+                    chunk=chunk,
+                    filename=chunk.document_id,
+                    score=self._cosine_similarity(embedding, chunk.embedding),
+                )
+            )
+
+        return sorted(scored, key=lambda item: item.score, reverse=True)[:limit]
+
     async def delete(self, chunk_id: str) -> None:
         self._storage.pop(chunk_id, None)
+
+    @staticmethod
+    def _cosine_similarity(left: list[float], right: list[float]) -> float:
+        if len(left) != len(right):
+            return 0.0
+
+        dot = sum(a * b for a, b in zip(left, right, strict=True))
+        left_norm = sqrt(sum(a * a for a in left))
+        right_norm = sqrt(sum(b * b for b in right))
+        if left_norm == 0 or right_norm == 0:
+            return 0.0
+        return dot / (left_norm * right_norm)

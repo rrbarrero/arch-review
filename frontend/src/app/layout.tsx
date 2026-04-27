@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Arch Review — Intake",
-  description: "Upload and ingest Markdown and Python files",
+  title: "Arch Review",
+  description: "Review technical documentation with retrieval-augmented chat",
 }
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full">{children}</body>
     </html>
   )
 }

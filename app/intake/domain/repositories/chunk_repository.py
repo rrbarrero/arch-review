@@ -1,8 +1,11 @@
 from collections.abc import Sequence
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from app.intake.domain.entities.chunk import DocumentChunk
 from app.intake.domain.value_objects.status import ChunkStatus
+
+if TYPE_CHECKING:
+    from app.chat.domain.services.retrieval_service import ScoredChunk
 
 
 class ChunkRepository(Protocol):
@@ -11,4 +14,7 @@ class ChunkRepository(Protocol):
     async def find_by_id(self, chunk_id: str) -> DocumentChunk | None: ...
     async def find_by_document_id(self, document_id: str) -> Sequence[DocumentChunk]: ...
     async def find_by_status(self, status: ChunkStatus) -> Sequence[DocumentChunk]: ...
+    async def search_similar(
+        self, embedding: list[float], limit: int = 6
+    ) -> Sequence["ScoredChunk"]: ...
     async def delete(self, chunk_id: str) -> None: ...
