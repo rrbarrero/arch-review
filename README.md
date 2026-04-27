@@ -180,80 +180,53 @@ Summarize the architecture described in the ingested documents.
 Example answer:
 
 ```text
-The architecture described in the ingested documents is a cloud-native LLM application built on Kubernetes, designed for reproducible deployment and observability. Key components and decisions include:
-Core Architecture Overview
+The architecture described in the documents is a cloud-native LLM application built on Kubernetes, designed for reproducible deployment and observability. Key components and configurations include:
+Core Services & Configuration
 
-    Application Stack:
-        Backend:
-            FastAPI for document ingestion and API endpoints (e.g., /chat for RAG queries).
-            PostgreSQL/pgvector for embeddings and vector search.
-            Neo4j for knowledge graph storage.
-            Traefik as the ingress controller (HTTP/HTTPS ports 30080/30443), routing traffic to services like arch-review-api (port 8000) and grafana (port 3000).
-        Frontend:
-            Next.js with assistant-ui for the chat interface, connecting to FastAPI’s /chat endpoint.
-            PGVector (port 5432) for vector database storage, linked to the arch_review namespace.
+    Application Stack
+        API Service: arch-review-api (Port 8000, Image arch-review:dev, Replica 1), managed via Traefik ingress (HTTP/HTTPS ports 30080/30443).
+        Frontend: arch-review-frontend (Port 3000), linked to the API via Traefik.
+        Database:
+            PostgreSQL/pgvector: Port 5432, Storage 256Mi, Image pgvector/pgvector:pg16, DB/User pgvector_db/pgvector_user linked to arch_review.
+            Neo4j: Ports 7474 (HTTP), 7687 (Bolt), Image neo4j:5-community, Storage 256Mi.
         Observability Stack:
-            OpenTelemetry (OTLP) for traces (via Tempo, ports 3200/4317/4318).
-            Prometheus for metrics (scrapes /metrics/ endpoints).
-            Loki for structured logs.
-            Grafana (port 3000, host grafana.arch-review.local) for dashboards.
+            Tempo: OTLP traces (Ports 3200, 4317, 4318).
+            Loki/Prometheus/Grafana: Logs, metrics, and dashboards (Grafana Host: grafana.arch-review.local).
 
-    Services & Deployments:
-        Single-replica deployments for simplicity (e.g., arch-review-api with replicas: "1").
-        Kubernetes manifests managed via Pulumi (IaC), with explicit port mappings and namespace isolation (e.g., traefik namespace for ingress).
-        Docker Compose for local development, and Kubernetes for production.
+    Networking & Security
+        Traefik: Ingress controller with explicit port assignments (traefik_http_node_port, traefik_https_node_port), Ingress Class traefik.
+        Encryption: Versioned salts (v1:JDVXG0inRtQ=) and unversioned salt (VCq7Emqf00ybfpTlhkDoBVUzzaSuUA==).
 
-    Data Layer:
-        RAG Integration:
-            Documents are validated, split into chunks, embedded via PostgreSQL/pgvector, and mirrored to Neo4j for graph representation.
-            Query embeddings are generated for semantic search.
+    Deployment
+        Kubernetes: Managed via Pulumi (ConfigMaps, Deployments, Services).
+        Local Development: Docker Compose for dev stack (observability + frontend).
+        Production: Kubernetes with Traefik Ingress for Grafana.
 
-    Key Decisions:
-        Standardized ports (e.g., PostgreSQL on 5432, Traefik on 30080/30443) for compatibility.
-        Development tags (:dev) for non-production images.
-        Fixed storage (256Mi) for PGVector and Neo4j.
-        Shared arch_review reference for DB/user linkage.
+Technical Architecture
 
-Tech Stack & Tools
+    Document Ingestion: Markdown/Python files are validated, split into chunks, embedded via PostgreSQL/pgvector, and mirrored to Neo4j for knowledge graph storage.
+    RAG Integration: Semantic search via pgvector, with POST /chat endpoint for retrieval-augmented generation (RAG).
+    Observability:
+        Traces: OpenTelemetry (OTLP to Tempo) with custom spans.
+        Metrics: Prometheus scrapes /metrics/ endpoints.
+        Logs: Structured logging with trace/span correlation to Loki.
+    Testing & CI/CD: Integration tests for chat, HTTP contracts, and automated linting/migration checks.
 
-    Backend: FastAPI, PostgreSQL/pgvector, Neo4j, Prometheus, OpenTelemetry.
-    Frontend: Next.js, LocalRuntime, ChatModelAdapter.
-    Observability: Tempo (traces), Loki (logs), Prometheus (metrics), Grafana (dashboards).
-    Deployment: Pulumi (IaC), Traefik (ingress), Kubernetes, Docker Compose.
+Key Decisions
 
-Deployment Workflow
+    Single-replica deployments for simplicity.
+    Traefik as ingress controller with explicit port mappings.
+    Standardized ports (e.g., PostgreSQL 5432, Grafana 3000) for compatibility.
+    Development tags (:dev) for non-production.
+    Infrastructure-as-Code (Pulumi) for reproducible Kubernetes deployments.
 
-    Local: Docker Compose for dev (includes observability stack + Next.js).
-    Production: Kubernetes via Pulumi with Traefik ingress for Grafana (grafana.arch-review.local).
-    Endpoints:
-        UI: http://localhost:3000 (Next.js).
-        API: http://localhost:8000 (FastAPI).
+Code/Infrastructure References
 
-Code & Configuration References
+    Tools: FastAPI, Next.js, PostgreSQL/pgvector, Neo4j, OpenTelemetry, Prometheus, Loki, Tempo, Pulumi, Traefik.
+    Deployments: Docker Compose (local), Kubernetes (production).
+    Services: FastAPI, httpx, psycopg, embedding service, chunk repository.
 
-    YAML manifests for services, Traefik, and ingress rules.
-    Parameters like traefik_namespace, pgvector_storage_size, and arch_review associations.
-    Shared arch-review namespace for consistent configuration.
-
-Key Architectural Patterns
-
-    Domain-Driven Design (DDD): Separation of domain models, use cases, persistence, and HTTP routing.
-    Infrastructure-as-Code (IaC): Pulumi manages deployments (ConfigMaps, Deployments, Services).
-    Observability Integration: Full stack (traces, metrics, logs) for debugging and monitoring.
-
-Recent Enhancements
-
-    RAG Integration: POST /chat endpoint with semantic search via pgvector.
-    Frontend: Two-panel UI (sources/chat), standardized prompts, and camelCase response mapping.
-    Testing: CI/CD pipelines for pull request validation, linting, and Kubernetes verification.
-
-References:
-
-    Source 1: Pulumi.dev.yaml (encryption salts, service configs, Traefik/PGVector details).
-    Source 2: README.md (RAG system, observability stack, deployment workflow).
-    Source 3: README.md (DDD, RAG data layer, ingestion pipeline).
-    Source 4: README.md (initial platform setup, cloud-native workflow).
-    Source 6: README.md (testing, CI/CD, Kubernetes verification).
+Sources: Pulumi.dev.yaml (encryption, services, Traefik), README.md (RAG, observability, deployment workflows).
 
 Sources:
 
