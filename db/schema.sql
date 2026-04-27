@@ -34,6 +34,42 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: chunks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.chunks (
+    id text NOT NULL,
+    document_id text NOT NULL,
+    content text NOT NULL,
+    "position" integer NOT NULL,
+    status text NOT NULL,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    embedding public.vector,
+    graph_node_id text,
+    error text
+);
+
+
+--
+-- Name: documents; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.documents (
+    id text NOT NULL,
+    source_filename text NOT NULL,
+    source_content_type text NOT NULL,
+    source_size_bytes bigint NOT NULL,
+    status text NOT NULL,
+    raw_text text,
+    metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    error text
+);
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -43,11 +79,56 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: chunks chunks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chunks
+    ADD CONSTRAINT chunks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: documents documents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.documents
+    ADD CONSTRAINT documents_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: idx_chunks_document_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_chunks_document_id ON public.chunks USING btree (document_id);
+
+
+--
+-- Name: idx_chunks_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_chunks_status ON public.chunks USING btree (status);
+
+
+--
+-- Name: idx_documents_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_documents_status ON public.documents USING btree (status);
+
+
+--
+-- Name: chunks chunks_document_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.chunks
+    ADD CONSTRAINT chunks_document_id_fkey FOREIGN KEY (document_id) REFERENCES public.documents(id) ON DELETE CASCADE;
 
 
 --

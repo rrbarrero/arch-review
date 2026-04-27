@@ -7,11 +7,7 @@ import {
   type ChatModelAdapter,
   type ThreadMessage,
 } from "@assistant-ui/react"
-import {
-  askQuestion,
-  type ChatCitation,
-  type ChatMessageInput,
-} from "@/infrastructure/api/client"
+import { askQuestion, type ChatCitation, type ChatMessageInput } from "@/infrastructure/api/client"
 
 function partText(part: ThreadMessage["content"][number]): string {
   if (part.type !== "text") return ""
