@@ -8,6 +8,7 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
   useAuiState,
+  useMessagePartText,
 } from "@assistant-ui/react"
 import {
   ArrowDown,
@@ -23,6 +24,9 @@ import {
   User,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import dynamic from "next/dynamic"
+
+const MarkdownText = dynamic(() => import("@/components/chat/markdown-text").then((m) => m.MarkdownText), { ssr: false })
 
 export function ChatThread() {
   return (
@@ -167,6 +171,11 @@ const UserMessage: FC = () => {
   )
 }
 
+function MarkdownTextPart() {
+  const { text } = useMessagePartText()
+  return <MarkdownText text={text} />
+}
+
 const AssistantMessage: FC = () => {
   return (
     <MessagePrimitive.Root className="message-enter group flex items-start gap-3">
@@ -175,7 +184,7 @@ const AssistantMessage: FC = () => {
       </span>
       <div className="min-w-0 flex-1 space-y-2">
         <div className="max-w-none rounded-2xl rounded-tl-sm border border-pearl-aqua-700/30 bg-white px-5 py-3.5 text-sm leading-6 text-gray-700 shadow-sm">
-          <MessagePrimitive.Parts />
+          <MessagePrimitive.Parts components={{ Text: MarkdownTextPart }} />
         </div>
         <AssistantActions />
       </div>

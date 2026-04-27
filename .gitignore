@@ -13,3 +13,4 @@ wheels/
 storage/*
 .pytest_cache
 .ruff_cache
+frontend/.pnpm-store
